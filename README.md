@@ -3,32 +3,40 @@
 建築・間取り図面からの設備記号検出システム。物体検出 → 構造化データ(JSON)→ Viewer というパイプラインを、ミニチュア版で実装したプロジェクト。
 
 ## ステータス
-✅ Phase 2 完了 (Baseline モデル学習完了 / mAP@0.5 = 0.815)
-🚧 Phase 3 進行中:仮説検証サイクル
+✅ Phase 3 Exp 1 完了 (mAP@0.5 = **0.903** / Baseline から +8.8 ポイント)
+🚧 Phase 3 Exp 2 進行中:長期学習(epochs=100)
 
-## 成果(現時点)
+## 最新スコア(Exp 1)
 
-### Test セットでの最終スコア(YOLOv8n ベースライン)
+### Test セット全体
 
-| 指標 | 値 |
-|---|---|
-| mAP@0.5 | **0.815** |
-| mAP@0.5:0.95 | 0.616 |
-| Precision | 0.823 |
-| Recall | 0.733 |
-
-### クラス別 mAP@0.5
-
-| クラス | mAP@0.5 | 評価 |
+| 指標 | Baseline | **Exp 1 (現状最良)** |
 |---|---|---|
-| window | 0.992 | 🏆 |
-| door | 0.986 | 🏆 |
-| toilet | 0.966 | 🏆 |
-| sink | 0.823 | ✅ |
-| staircase | 0.704 | ○ |
-| shower | 0.417 | △ 課題 |
+| mAP@0.5 | 0.815 | **0.903** |
+| mAP@0.5:0.95 | 0.616 | ~0.65 |
 
-学習結果の詳細(学習曲線、混同行列、推論サンプル)は `models/baseline_yolov8n/` 配下に保存。
+### クラス別 mAP@0.5(Exp 1 ベスト)
+
+| クラス | mAP@0.5 |
+|---|---|
+| window | 0.993 🏆 |
+| toilet | 0.985 🏆 |
+| sink | 0.962 🏆 |
+| door | 0.987 🏆 |
+| staircase | 0.759 ○ |
+| shower | 0.730 ○ |
+
+## 仮説検証サイクル(Phase 3)
+
+| 実験 | 仮説 | 結果 | ステータス |
+|---|---|---|---|
+| Baseline | YOLOv8n / imgsz=640 でどこまで取れるか | mAP@0.5 = 0.815 | ✅ |
+| **Exp 1** | imgsz 640→1024 で小物体(shower)検出漏れが減る | mAP@0.5 = **0.903** (shower 0.42→**0.73**) | ✅ **仮説支持** |
+| Exp 2 | epochs 50→100 でまだ伸びしろのあるクラスがさらに改善 | (進行中) | 🚧 |
+| Exp 3 | モデル拡大(n→s)で全体精度UP、速度トレードオフ評価 | - | 計画中 |
+| SAHI | タイル分割推論で小物体検出を改善 | - | 任意 |
+
+詳細は `models/baseline_yolov8n/` および `models/exp1_highres_yolov8n/` 配下の README を参照。
 
 ## プロジェクトの背景
 
@@ -74,55 +82,40 @@
 | test | 36 | 409 |
 | 合計 | 227 | 2,624 |
 
-## ベースライン学習(Phase 2)
+## 主要な発見
 
-### 設定
-- モデル: YOLOv8n (約 300万 params)
-- エポック数: 50 (EarlyStopping: patience=15)
-- 画像サイズ: 640
-- バッチサイズ: 16
-- Optimizer: AdamW (自動選択)
-- 学習時間: 約 4 分(Tesla T4 GPU)
-- Seed: 42 (再現性確保)
+### Exp 1 から得られた洞察
 
-### 観察された知見
+**「Floor plan recognition は解像度依存度が極めて高いタスク」**
 
-混同行列の分析から、shower の低精度(0.42)は **「他クラスとの混同」ではなく「検出漏れ」が原因** であることを発見:
-- 22個の shower のうち、20個が背景クラスとして見落とされていた
-- 他クラスとの混同はゼロ
+- 一般物体検出(COCO等)では imgsz=640 が標準
+- しかし設備記号は小さく、相対的なピクセル数が少ない
+- **間取り図のような特定ドメインでは、デフォルト設定を疑い、ハイパラを最適化することで大幅な精度UPが可能**
 
-→ これは「クラス学習自体は正しいが、shower の特徴抽出が不十分」という仮説につながる。
+### 混同行列分析(Baseline)で発見した事実
 
-学習曲線が50エポック時点でまだ完全に平坦化していないことから、**追加学習の余地がある** ことも観察された。
-
-## 仮説検証サイクル(Phase 3 で進行)
-
-ベースラインの観察から立てた検証可能な仮説(優先順):
-
-| # | 仮説 | 実験設計 | ステータス |
-|---|---|---|---|
-| 1 | 入力解像度を 640 → 1024 に上げれば、小物体(shower)の検出漏れが減る | imgsz=1024 で再学習 | 🚧 |
-| 2 | エポック数を 50 → 100 にすれば、学習曲線が平坦化し mAP がさらに上がる | epochs=100, patience=30 で再学習 | 計画中 |
-| 3 | モデルサイズを n → s に上げれば、全体的に精度向上(速度とのトレードオフ評価) | YOLOv8s で再学習 | 計画中 |
-| 4 | SAHI(タイル分割推論)で小物体検出を改善 | 推論時の工夫 | 計画中 |
+shower の低精度(0.42)は「他クラスとの混同」ではなく「**検出漏れ(false negative)が91%**」が原因と判明。これにより「クラス分離の問題ではなく、特徴抽出の問題」と特定し、Exp 1 の解像度UPによる解決につながった。
 
 ## ディレクトリ構成
 floor-plan-recognition/
-├── data/                    # データセット(.gitignoreで除外)
-│   ├── roboflow/           # Roboflowから取得した元データ
-│   └── floorplan_yolo/     # 6クラスにフィルタ後の最終データ
+├── data/                              # データセット(.gitignoreで除外)
+│   ├── roboflow/                      # Roboflowから取得した元データ
+│   └── floorplan_yolo/                # 6クラスにフィルタ後の最終データ
 ├── notebooks/
-│   └── 01_baseline_training.ipynb  # Colab 学習ノートブック
-├── scripts/                 # 単発実行スクリプト
-│   ├── check_env.py        # 環境確認
-│   ├── download_roboflow.py # データセット取得
-│   ├── inspect_data.py     # データ統計確認
-│   ├── visualize_data.py   # 可視化
-│   └── prepare_dataset.py  # クラスフィルタ + 再分割
-├── src/                     # メインソース
+│   ├── 01_baseline_training.ipynb    # ベースライン学習
+│   ├── 02_exp1_highres_training.ipynb # Exp 1: 高解像度
+│   └── 03_exp2_long_training.ipynb   # Exp 2: 長期学習
+├── scripts/                           # 単発実行スクリプト
+│   ├── check_env.py                   # 環境確認
+│   ├── download_roboflow.py           # データセット取得
+│   ├── inspect_data.py                # データ統計確認
+│   ├── visualize_data.py              # 可視化
+│   └── prepare_dataset.py             # クラスフィルタ + 再分割
+├── src/                               # メインソース
 ├── models/
-│   └── baseline_yolov8n/   # 学習結果(画像のみ Git に含む、.pt は除外)
-├── outputs/                 # 実験結果
+│   ├── baseline_yolov8n/              # ベースライン学習結果
+│   └── exp1_highres_yolov8n/          # Exp 1 学習結果
+├── outputs/                           # その他出力
 └── docs/
 
 ## セットアップと再現手順
@@ -142,7 +135,7 @@ echo "ROBOFLOW_API_KEY=your_key_here" > .env
 python scripts/download_roboflow.py
 python scripts/prepare_dataset.py
 
-# 学習は Colab で実行(notebooks/01_baseline_training.ipynb)
+# 学習は Colab で実行(notebooks/*.ipynb)
 ```
 
 ## ライセンス
