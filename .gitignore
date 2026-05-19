@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+
+# 仮想環境
+venv/
+.venv/
+env/
+
+# データセット(重い、別途ダウンロード)
+data/
+!data/.gitkeep
+
+# モデルファイル(重い)
+models/*.pt
+models/*.pth
+models/*.onnx
+!models/.gitkeep
+
+# 出力結果(再生成可能)
+outputs/
+runs/
+!outputs/.gitkeep
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Mac
+.DS_Store
+
+# エディタ
+.vscode/
+.idea/
+*.swp
+
+# 環境変数
+.env
