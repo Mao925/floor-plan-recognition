@@ -10,20 +10,19 @@ venv/
 .venv/
 env/
 
-# データセット(重い、別途ダウンロード)
-data/
+# データセット(重いので中身は無視、.gitkeep だけ残す)
+data/*
 !data/.gitkeep
 
 # モデルファイル(重い)
 models/*.pt
 models/*.pth
 models/*.onnx
-!models/.gitkeep
 
 # 出力結果(再生成可能)
-outputs/
-runs/
+outputs/*
 !outputs/.gitkeep
+runs/
 
 # Jupyter
 .ipynb_checkpoints/
