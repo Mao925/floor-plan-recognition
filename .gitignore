@@ -14,10 +14,10 @@ env/
 data/*
 !data/.gitkeep
 
-# モデルファイル(重い)
-models/*.pt
-models/*.pth
-models/*.onnx
+# モデルファイル(重い、全階層で除外)
+*.pt
+*.pth
+*.onnx
 
 # 出力結果(再生成可能)
 outputs/*

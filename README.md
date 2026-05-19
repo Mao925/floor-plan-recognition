@@ -1,13 +1,38 @@
 # Floor Plan Recognition
 
-建築・間取り図面からの設備記号検出システム。物体検出 → 構造化データ(JSON)→ Viewer というパイプラインを、ミニチュア版で実装したプロジェクトです。
+建築・間取り図面からの設備記号検出システム。物体検出 → 構造化データ(JSON)→ Viewer というパイプラインを、ミニチュア版で実装したプロジェクト。
 
 ## ステータス
-🚧 開発中(Phase 1 完了 / Phase 2: モデル学習へ)
+✅ Phase 2 完了 (Baseline モデル学習完了 / mAP@0.5 = 0.815)
+🚧 Phase 3 進行中:仮説検証サイクル
+
+## 成果(現時点)
+
+### Test セットでの最終スコア(YOLOv8n ベースライン)
+
+| 指標 | 値 |
+|---|---|
+| mAP@0.5 | **0.815** |
+| mAP@0.5:0.95 | 0.616 |
+| Precision | 0.823 |
+| Recall | 0.733 |
+
+### クラス別 mAP@0.5
+
+| クラス | mAP@0.5 | 評価 |
+|---|---|---|
+| window | 0.992 | 🏆 |
+| door | 0.986 | 🏆 |
+| toilet | 0.966 | 🏆 |
+| sink | 0.823 | ✅ |
+| staircase | 0.704 | ○ |
+| shower | 0.417 | △ 課題 |
+
+学習結果の詳細(学習曲線、混同行列、推論サンプル)は `models/baseline_yolov8n/` 配下に保存。
 
 ## プロジェクトの背景
 
-このプロジェクトは「図面 → ML → 構造化データ → Viewer」というフローを、個人プロジェクトとして実装することを目的としています。建築・設備図面認識システムにおける典型的なパイプラインのミニ実装です。
+このプロジェクトは「図面 → ML → 構造化データ → Viewer」というフローを、個人プロジェクトとして実装することを目的としている。建築・設備図面認識システムにおける典型的なパイプラインのミニ実装。
 
 ## 技術スタック
 
@@ -16,7 +41,7 @@
 - **画像処理**: OpenCV, Pillow
 - **学習環境**: Google Colab (T4 GPU)
 - **推論・開発環境**: ローカル macOS (Apple Silicon M2 + MPS)
-- **Viewer**: Streamlit(予定)
+- **Viewer**: Streamlit(Phase 5 予定)
 
 ## データセット
 
@@ -49,11 +74,45 @@
 | test | 36 | 409 |
 | 合計 | 227 | 2,624 |
 
+## ベースライン学習(Phase 2)
+
+### 設定
+- モデル: YOLOv8n (約 300万 params)
+- エポック数: 50 (EarlyStopping: patience=15)
+- 画像サイズ: 640
+- バッチサイズ: 16
+- Optimizer: AdamW (自動選択)
+- 学習時間: 約 4 分(Tesla T4 GPU)
+- Seed: 42 (再現性確保)
+
+### 観察された知見
+
+混同行列の分析から、shower の低精度(0.42)は **「他クラスとの混同」ではなく「検出漏れ」が原因** であることを発見:
+- 22個の shower のうち、20個が背景クラスとして見落とされていた
+- 他クラスとの混同はゼロ
+
+→ これは「クラス学習自体は正しいが、shower の特徴抽出が不十分」という仮説につながる。
+
+学習曲線が50エポック時点でまだ完全に平坦化していないことから、**追加学習の余地がある** ことも観察された。
+
+## 仮説検証サイクル(Phase 3 で進行)
+
+ベースラインの観察から立てた検証可能な仮説(優先順):
+
+| # | 仮説 | 実験設計 | ステータス |
+|---|---|---|---|
+| 1 | 入力解像度を 640 → 1024 に上げれば、小物体(shower)の検出漏れが減る | imgsz=1024 で再学習 | 🚧 |
+| 2 | エポック数を 50 → 100 にすれば、学習曲線が平坦化し mAP がさらに上がる | epochs=100, patience=30 で再学習 | 計画中 |
+| 3 | モデルサイズを n → s に上げれば、全体的に精度向上(速度とのトレードオフ評価) | YOLOv8s で再学習 | 計画中 |
+| 4 | SAHI(タイル分割推論)で小物体検出を改善 | 推論時の工夫 | 計画中 |
+
 ## ディレクトリ構成
 floor-plan-recognition/
 ├── data/                    # データセット(.gitignoreで除外)
 │   ├── roboflow/           # Roboflowから取得した元データ
 │   └── floorplan_yolo/     # 6クラスにフィルタ後の最終データ
+├── notebooks/
+│   └── 01_baseline_training.ipynb  # Colab 学習ノートブック
 ├── scripts/                 # 単発実行スクリプト
 │   ├── check_env.py        # 環境確認
 │   ├── download_roboflow.py # データセット取得
@@ -61,11 +120,12 @@ floor-plan-recognition/
 │   ├── visualize_data.py   # 可視化
 │   └── prepare_dataset.py  # クラスフィルタ + 再分割
 ├── src/                     # メインソース
-├── models/                  # 学習済みモデル(.gitignoreで除外)
+├── models/
+│   └── baseline_yolov8n/   # 学習結果(画像のみ Git に含む、.pt は除外)
 ├── outputs/                 # 実験結果
-└── notebooks/               # 探索用ノートブック
+└── docs/
 
-## セットアップ
+## セットアップと再現手順
 
 ```bash
 # 仮想環境作成
@@ -81,15 +141,10 @@ echo "ROBOFLOW_API_KEY=your_key_here" > .env
 # データセット取得 + 前処理
 python scripts/download_roboflow.py
 python scripts/prepare_dataset.py
+
+# 学習は Colab で実行(notebooks/01_baseline_training.ipynb)
 ```
 
-## 次のステップ(Phase 2 以降)
-
-- [ ] YOLOv8n でベースライン学習(Colab)
-- [ ] 評価指標(mAP, クラス別 AP)の確認
-- [ ] Failure case 分析
-- [ ] 仮説検証サイクル:モデルサイズ/解像度/SAHI による改善
-
 ## ライセンス
-データセット: CC BY 4.0 (Roboflow Universe)
-コード: MIT(予定)
+- データセット: CC BY 4.0 (Roboflow Universe)
+- コード: MIT(予定)
