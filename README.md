@@ -217,12 +217,12 @@ python scripts/build_3d_model.py
 
 ## 📂 ディレクトリ構成
 floor-plan-recognition/
-├── notebooks/                  # Google Colab 学習用
+├── notebooks/                            # Google Colab 学習用
 │   ├── 01_baseline_training.ipynb
 │   ├── 02_exp1_highres_training.ipynb
-│   ├── 03_exp2_long_training.ipynb       # 最終採用 (検出)
+│   ├── 03_exp2_long_training.ipynb       # 最終採用 (検出, mAP 0.966)
 │   ├── 04_exp3_yolo26n_training.ipynb
-│   └── 05_m1_seg_training.ipynb          # 最終採用 (セグメンテーション)
+│   └── 05_m1_seg_training.ipynb          # 最終採用 (セグ, Mask mAP 0.903)
 ├── scripts/
 │   ├── check_env.py                       # 環境確認
 │   ├── download_roboflow.py               # データダウンロード
@@ -230,20 +230,20 @@ floor-plan-recognition/
 │   ├── prepare_dataset_seg.py             # セグ用 8 クラスデータ準備
 │   ├── test_inference.py                  # 検出テスト
 │   ├── test_seg_inference.py              # セグテスト
-│   ├── build_floorplan_json.py            # M1 推論→ベクトル化→JSON
+│   ├── build_floorplan_json.py            # M1 推論 → ベクトル化 → JSON
 │   └── build_3d_model.py                  # JSON → 3D GLB
 ├── src/
 │   ├── inference.py                       # 検出推論モジュール
-│   ├── vectorize.py                       # ベクトル化(部屋・壁・設備紐付け)
+│   ├── vectorize.py                       # ベクトル化 (部屋・壁・設備紐付け)
 │   ├── pipeline.py                        # フルパイプライン統合関数
 │   └── app.py                             # Streamlit Web アプリ
 ├── models/
 │   ├── exp2_long_yolov8n/                 # 検出ベスト (mAP 0.966)
 │   └── m1_seg_yolov8n/                    # セグメンテーション (Mask mAP 0.903)
-├── outputs/                                # .gitignore で除外
+├── outputs/                               # .gitignore で除外
 │   ├── floorplan_json/                    # ベクトル化結果
 │   └── 3d_models/                         # 生成された GLB
-├── data/                                   # .gitignore で除外
+├── data/                                  # .gitignore で除外
 ├── README.md
 ├── requirements.txt
 └── .gitignore
