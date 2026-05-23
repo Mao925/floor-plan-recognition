@@ -216,6 +216,8 @@ python scripts/build_3d_model.py
 ---
 
 ## 📂 ディレクトリ構成
+
+```
 floor-plan-recognition/
 ├── notebooks/                            # Google Colab 学習用
 │   ├── 01_baseline_training.ipynb
@@ -247,6 +249,7 @@ floor-plan-recognition/
 ├── README.md
 ├── requirements.txt
 └── .gitignore
+```
 
 ---
 
