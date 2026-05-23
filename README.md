@@ -3,6 +3,12 @@
 > 1枚の間取り図 (PNG/JPG) を入力すると、**部屋・壁・設備を自動認識**し、
 > ブラウザで回転できる **3D の家** として可視化するシステム。
 
+<p align="center">
+  <img src="docs/images/03_detection.jpg" alt="ML 検出結果:高精度な物体検出+セグメンテーション" width="600"/>
+  <br/>
+  <em>YOLOv8n-seg による検出+セグメンテーション結果 (mAP@0.5 = 0.903)</em>
+</p>
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C)
@@ -37,6 +43,12 @@
 **4 実験で物体検出の mAP@0.5 を 0.815 → 0.966 (+15.1pt) に改善**。
 詳細は [§ 実験ログ](#-実験ログ4-実験の物語) を参照。
 
+<p align="center">
+  <img src="docs/images/02_vectorized.jpg" alt="ベクトル化結果" width="600"/>
+  <br/>
+  <em>マスクをベクトル化:部屋ポリゴン (緑) + 壁線分 (赤) + 設備配置を構造化 JSON に</em>
+</p>
+
 ---
 
 ## 🏗️ アーキテクチャ
@@ -64,6 +76,12 @@ flowchart LR
 | 2. ベクトル化 | マスクをポリゴン・線分・bbox に変換、部屋への所属判定 | OpenCV findContours, scikit-image skeletonize, HoughLinesP | 構造化 JSON |
 | 3. 3D 生成 | 部屋ポリゴンを押し出し、設備を箱で配置 | trimesh.creation.extrude_polygon, shapely.geometry.Polygon | GLB バイナリ |
 | 4. Web 表示 | ブラウザに 3D ビューア + UI を表示 | Streamlit, Google <model-viewer> | インタラクティブ Web アプリ |
+
+<p align="center">
+  <img src="docs/images/04_3d_view.png" alt="3D Web ビューア" width="500"/>
+  <br/>
+  <em>Streamlit + Google &lt;model-viewer&gt; によるブラウザ上の 3D 表示</em>
+</p>
 
 ---
 
